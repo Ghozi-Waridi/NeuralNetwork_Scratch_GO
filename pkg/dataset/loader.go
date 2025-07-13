@@ -1,18 +1,11 @@
-package main
+package loader
 
 import (
-	// "fmt"
 	"fmt"
 	"image"
-
-	// "image/color"
-	// "image/jpeg"
 	_ "image/jpeg"
 	_ "image/png"
-
-	// "io/fs"
 	"os"
-	// "path/filepath"
 )
 
 func LoadImage(path string) (image.Image, error) {
@@ -38,7 +31,7 @@ type Pixel struct {
 	R, G, B uint8
 }
 
-func (p Pixel) convertToArray(img image.Image) [][]Pixel {
+func ConvertToArray(img image.Image) [][]Pixel {
 	width, height := img.Bounds().Dx(), img.Bounds().Dy()
 	pixels := make([][]Pixel, height)
 
@@ -53,22 +46,23 @@ func (p Pixel) convertToArray(img image.Image) [][]Pixel {
 			}
 		}
 	}
-
 	return pixels
 }
 
-func main() {
-	image, err := LoadImage("")
+func GrayScale(img [][]Pixel) [][]int {
+	width, height := len(img[0]), len(img)
 
-	if err != nil {
-		fmt.Println("Error loading image:", err)
-		return
+	grayPixels := make([][]int, height)
+
+	for y := 0; y < height; y++ {
+		grayPixels[y] = make([]int, width)
+		for x := 0; x < width; x++ {
+			gray := (int(img[y][x].R) +
+				int(img[y][x].G) +
+				int(img[y][x].B)) / 3
+
+			grayPixels[y][x] = gray
+		}
 	}
-
-	fmt.Println(image)
-
-	fmt.Println("Panjang ", image.Bounds().Dx())
-	fmt.Println("Lebar ", image.Bounds().Dy())
-
-	fmt.Println(image.At(0, 0))
+	return grayPixels
 }
