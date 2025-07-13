@@ -52,7 +52,7 @@ func LoadImage(path string) (image.Image, error) {
 // }
 
 func main() {
-	image, err := LoadImage("../../alya.jpg")
+	image, err := LoadImage("")
 
 	if err != nil {
 		fmt.Println("Error loading image:", err)
