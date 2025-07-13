@@ -34,22 +34,28 @@ func LoadImage(path string) (image.Image, error) {
 }
 
 // Convert image to pixel array
-// type Pixel struct {
-// 	R, G, B uint8
-// }
-//
-// func (p Pixel) convertToArray(img image.Image) [][]Pixel {
-// 	width, height := img.Bounds().Dx(), img.Bounds().Dy()
-// 	pixels := make([][]Pixel, height)
-//
-// 	for y := 0; y < height; y++ {
-// 	pixels[y] = make([]Pixel, width)
-// 		for x := 0; x < width; x++ {
-// 				}
-// 	}
-//
-// 	return pixels
-// }
+type Pixel struct {
+	R, G, B uint8
+}
+
+func (p Pixel) convertToArray(img image.Image) [][]Pixel {
+	width, height := img.Bounds().Dx(), img.Bounds().Dy()
+	pixels := make([][]Pixel, height)
+
+	for y := 0; y < height; y++ {
+		pixels[y] = make([]Pixel, width)
+		for x := 0; x < width; x++ {
+			r, g, b, _ := img.At(x, y).RGBA()
+			pixels[y][x] = Pixel{
+				R: uint8(r >> 8),
+				G: uint8(g >> 8),
+				B: uint8(b >> 8),
+			}
+		}
+	}
+
+	return pixels
+}
 
 func main() {
 	image, err := LoadImage("")
