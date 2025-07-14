@@ -5,64 +5,67 @@ import (
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
+	"io/fs"
+	"log"
+	"neuralnetworks/pkg/preproces"
 	"os"
+	"path/filepath"
 )
 
-func LoadImage(path string) (image.Image, error) {
+func LoadImage(path string) ([]image.Image, error) {
+	// Func ini masih salah logika, seharusnya func bisa mengatasi file gambar yang banyak dari sebauh folder bukan hanya 1 gambar saja.
 
-	fileImage, errors := os.Open(path)
+	var images []image.Image
+	err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return fmt.Errorf("| ERROR | Gagal Membaca Direktori %s: %w", path, err)
+		}
 
-	if errors != nil {
-		return nil, fmt.Errorf("failed to open image file %s: %w", path, errors)
+		if !d.IsDir() {
+			fileImage, errors := os.Open(path)
+
+			if errors != nil {
+				return fmt.Errorf("| ERROR | Gagak Membuka Gambar %s: %w", path, errors)
+			}
+
+			defer fileImage.Close()
+			img, _, err := image.Decode(fileImage)
+
+			if err != nil {
+				return fmt.Errorf("| ERROR | Gagal Mendekode File : %s: %w", path, err)
+			}
+			images = append(images, img)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("| ERROR | Gagal Membaca File Gambar: %w", err)
+	}
+	return images, nil
+}
+
+func DataLoader(path string, grayScale bool) [][][]uint8 {
+
+	var images [][][]uint8
+
+	if path == "" {
+		log.Println("Path Tidak Boleh Kosong")
+		return nil
 	}
 
-	defer fileImage.Close()
-	image, _, err := image.Decode(fileImage)
+	img, err := LoadImage(path)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode image file %s: %w", path, err)
+		log.Printf("Gagal Memuat Gambar: %v\n", err)
+		return nil
 	}
 
-	return image, nil
-}
+	imagesRGB := preproces.ConvertToArray(img)
 
-// Convert image to pixel array
-type Pixel struct {
-	R, G, B uint8
-}
-
-func ConvertToArray(img image.Image) [][]Pixel {
-	width, height := img.Bounds().Dx(), img.Bounds().Dy()
-	pixels := make([][]Pixel, height)
-
-	for y := 0; y < height; y++ {
-		pixels[y] = make([]Pixel, width)
-		for x := 0; x < width; x++ {
-			r, g, b, _ := img.At(x, y).RGBA()
-			pixels[y][x] = Pixel{
-				R: uint8(r >> 8),
-				G: uint8(g >> 8),
-				B: uint8(b >> 8),
-			}
-		}
+	if grayScale {
+		images = preproces.GrayScale(imagesRGB)
+		return images
 	}
-	return pixels
-}
 
-func GrayScale(img [][]Pixel) [][]int {
-	width, height := len(img[0]), len(img)
-
-	grayPixels := make([][]int, height)
-
-	for y := 0; y < height; y++ {
-		grayPixels[y] = make([]int, width)
-		for x := 0; x < width; x++ {
-			gray := (int(img[y][x].R) +
-				int(img[y][x].G) +
-				int(img[y][x].B)) / 3
-
-			grayPixels[y][x] = gray
-		}
-	}
-	return grayPixels
+	return images
 }
