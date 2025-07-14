@@ -1,3 +1,13 @@
+/*
+** Package loader
+Menyediakan fungsi untuk memuat gambat dari direktori, dan preproses gambar tersebut.
+func  Preprses di ambil dari package preproces
+
+Fitur Utama:
+	1. LoadImage: Memuat gambat dari path direktori.
+	2. DataLoader: Mengelola gambar dari func package preproces
+*/
+
 package loader
 
 import (
@@ -12,9 +22,20 @@ import (
 	"path/filepath"
 )
 
-func LoadImage(path string) ([]image.Image, error) {
-	// Func ini masih salah logika, seharusnya func bisa mengatasi file gambar yang banyak dari sebauh folder bukan hanya 1 gambar saja.
+/*
+** LoadImage
+Fungsi untuk meimuat gmabar dari path direktori parameter.
 
+Parameter:
+
+  - Path string: path direktori gambar.
+
+Return:
+
+  - []image.Image: slice dari gambar yang dimuat.
+  - Error: error jika terjadi kesalahan saat membaca direktori atau membuka file gambar.
+*/
+func LoadImage(path string) ([]image.Image, error) {
 	var images []image.Image
 	err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -44,6 +65,19 @@ func LoadImage(path string) ([]image.Image, error) {
 	return images, nil
 }
 
+/*
+** DataLoader
+fungsi untuk mengolah gambar.
+
+Parameter:
+
+  - Path string: path direktori gambar dan diteruskan ke fungsi LoadImage.
+  - grayScale bool: jika true, gambar akan diubah menjadi skala abu-abu.
+
+Return:
+
+  - [][][]uint8: slice tiga dimensi yang berisi data gambar dalam format uint8.
+*/
 func DataLoader(path string, grayScale bool) [][][]uint8 {
 
 	var images [][][]uint8

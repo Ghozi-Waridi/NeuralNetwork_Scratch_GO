@@ -1,3 +1,13 @@
+/*
+** preproces
+Menyediakan fungsi untuk mengonversi gambar menjadi array(slice) dan pengolahan gambar.
+
+Fitur Utama:
+	1. ConvertToArray: Mengonversi gambar menjadi array pixel.
+	2. GrayScale: Mengubah gambar menjadi skala abu-abu.
+
+*/
+
 package preproces
 
 import (
@@ -6,11 +16,20 @@ import (
 	_ "image/png"
 )
 
-// Convert image to pixel array
 type Pixel struct {
 	R, G, B uint8
 }
 
+/*
+** ConvertToArray
+Fungsi untuk mengonversi gambar menjadi array struct Pixel.
+
+Parameter:
+  - img []image.Image: slice dari gambar yang akan dikonversi.
+
+Return:
+  - [][][]Pixel: slice tiga dimensi yang berisi pixel RGB dari gambar.
+*/
 func ConvertToArray(img []image.Image) [][][]Pixel {
 
 	panjang := len(img)
@@ -36,6 +55,16 @@ func ConvertToArray(img []image.Image) [][][]Pixel {
 	return imagesRGB
 }
 
+/*
+** GrayScale
+Fungsi untuk mengubah gambar menjadi skala abu-abu.
+
+Parameter:
+  - img [][][]Pixel: slice tiga dimensi yang berisi pixel RGB dari gambar.
+
+Return:
+  - [][][]uint8: slice tiga dimensi yang berisi nilai skala abu-abu dari gambar.
+*/
 func GrayScale(img [][][]Pixel) [][][]uint8 {
 	panjang := len(img)
 	var datagrayScale [][][]uint8
