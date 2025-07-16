@@ -58,13 +58,9 @@ func TestConvertToArray(t *testing.T) {
 	if !reflect.DeepEqual(actualArray, expectedArray) {
 		t.Errorf("Expected %v, but got %v", expectedArray, actualArray)
 	}
-
-
 }
 
 func TestGrayScale(t *testing.T) {
-
-
 	testImage := [][]loader.Pixel{
 		{
 			{R: 255, G: 50, B: 100},
