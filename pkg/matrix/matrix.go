@@ -77,3 +77,11 @@ func Transpose(a [][]float64) [][]float64 {
 	}
 	return result
 }
+
+func CreateMatrix(rows, cols int) [][]float64 {
+	matrix := make([][]float64, rows)
+	for i := range matrix {
+		matrix[i] = make([]float64, cols)
+	}
+	return matrix
+}
