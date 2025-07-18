@@ -1,13 +1,13 @@
 package model
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"math/rand"
 	"neuralnetworks/pkg/activation"
 	"neuralnetworks/pkg/deactivate"
 	"neuralnetworks/pkg/matrix"
-
 	"time"
 )
 
@@ -80,61 +80,130 @@ func (params *HyperParameters) Predict(input []float64) []float64 {
 	return matrix.Flate(output)
 }
 
-func (params *HyperParameters) Train(inputs, targets []float64) {
-	input := matrix.FromSlice(inputs)
-	target := matrix.FromSlice(targets)
-	// Membuat slice untuk menyimpan hasil activation tetapi ini tidak berisi
-	activations := make([][][]float64, len(params.Architecture))
-	// Inisialisasi layer pertama dengan input
-	activations[0] = input
-	// Membuat slice untuk menyimpan hasil z (hasil Dari linear Regersi (dot product))
-	zs := make([][][]float64, len(params.Weight))
+func CalculateMSE(errorMatrix [][]float64) float64 {
+	var sum float64
+	rows := len(errorMatrix)
 
-	// ======= FORWARD PROPAGATION =======
-	for i := 0; i < len(params.Weight); i++ {
-		z := matrix.Dot(params.Weight[i], activations[i])
-		z = matrix.Add(z, params.Bias[i])
-		zs[i] = z
+	if rows == 0 {
+		return 0.0
+	}
 
-		var a [][]float64
-		if i == len(params.Weight)-1 {
-			a = matrix.Map(z, activation.Sigmoid)
-		} else {
-			a = matrix.Map(z, activation.Relu)
+	for i := 0; i < rows; i++ {
+		err := errorMatrix[i][0]
+		sum += err * err
+	}
+	return sum / float64(rows)
+
+}
+func (params *HyperParameters) Train(inputs, targets []float64, epochs int) []float64 {
+
+	lossHistory := make([]float64, epochs)
+	for a := 0; a < epochs; a++ {
+
+		input := matrix.FromSlice(inputs)
+		target := matrix.FromSlice(targets)
+		// Membuat slice untuk menyimpan hasil activation tetapi ini tidak berisi
+		activations := make([][][]float64, len(params.Architecture))
+		// Inisialisasi layer pertama dengan input
+		activations[0] = input
+		// Membuat slice untuk menyimpan hasil z (hasil Dari linear Regersi (dot product))
+		zs := make([][][]float64, len(params.Weight))
+
+		// ======= FORWARD PROPAGATION =======
+		for i := 0; i < len(params.Weight); i++ {
+			z := matrix.Dot(params.Weight[i], activations[i])
+			z = matrix.Add(z, params.Bias[i])
+			zs[i] = z
+
+			var a [][]float64
+			if i == len(params.Weight)-1 {
+				a = matrix.Map(z, activation.Sigmoid)
+			} else {
+				a = matrix.Map(z, activation.Relu)
+			}
+
+			activations[i+1] = a
 		}
 
-		activations[i+1] = a
+		// ======= BACKWARD PROPAGATION =======
+
+		// menghitung error pada output layer (loss)
+		outputError := matrix.Subtract(activations[len(activations)-1], target)
+
+		loss := CalculateMSE(outputError)
+		lossHistory[a] = loss
+		if (a+1)%100 == 0 || a == 0 {
+			fmt.Printf("Epoch %d/%d, Loss: %f\n", a+1, epochs, loss)
+		}
+
+		dzError := matrix.Map(zs[len(zs)-1], deactivate.Sigmoid)
+		delta := matrix.Multiply(outputError, dzError)
+		// gradient descent untuk weight dan Bias
+		prevActivateT := matrix.Transpose(activations[len(activations)-2])
+		dWeight := matrix.Dot(delta, prevActivateT)
+		dBias := delta
+
+		params.Weight[len(params.Weight)-1] = matrix.Subtract(params.Weight[len(params.Weight)-1], matrix.Map(dWeight, func(x float64) float64 { return x * params.LearningRate }))
+		params.Bias[len(params.Bias)-1] = matrix.Subtract(params.Bias[len(params.Bias)-1], matrix.Map(dBias, func(x float64) float64 { return x * params.LearningRate }))
+
+		for i := len(params.Weight) - 2; i >= 0; i-- {
+			weightsT := matrix.Transpose(params.Weight[i+1])
+			hiddenError := matrix.Dot(weightsT, delta)
+			dzDeactivate := matrix.Map(zs[i], deactivate.Relu)
+			delta = matrix.Multiply(hiddenError, dzDeactivate)
+
+			// Menghitung Gradient Descent untuk weight dan Bias
+			prevActivateT := matrix.Transpose(activations[i])
+			dWeight = matrix.Dot(delta, prevActivateT)
+			dBias = delta
+
+			params.Weight[i] = matrix.Subtract(params.Weight[i], matrix.Map(dWeight, func(x float64) float64 { return x * params.LearningRate }))
+			params.Bias[i] = matrix.Subtract(params.Bias[i], matrix.Map(dBias, func(x float64) float64 { return x * params.LearningRate }))
+		}
 	}
+	return lossHistory
+}
 
-	// ======= BACKWARD PROPAGATION =======
-
-	// menghitung error pada output layer (loss)
-	outputError := matrix.Subtract(activations[len(activations)-1], target)
-	dzError := matrix.Map(zs[len(zs)-1], deactivate.Sigmoid)
-	delta := matrix.Multiply(outputError, dzError)
-
-	// gradient descent untuk weight dan Bias
-	prevActivateT := matrix.Transpose(activations[len(activations)-2])
-	dWeight := matrix.Dot(delta, prevActivateT)
-	dBias := delta
-
-	params.Weight[len(params.Weight)-1] = matrix.Subtract(params.Weight[len(params.Weight)-1], matrix.Map(dWeight, func(x float64) float64 { return x * params.LearningRate }))
-	params.Bias[len(params.Bias)-1] = matrix.Subtract(params.Bias[len(params.Bias)-1], matrix.Map(dBias, func(x float64) float64 { return x * params.LearningRate }))
-
-	for i := len(params.Weight) - 2; i >= 0; i-- {
-		weightsT := matrix.Transpose(params.Weight[i+1])
-		hiddenError := matrix.Dot(weightsT, delta)
-		dzDeactivate := matrix.Map(zs[i], deactivate.Relu)
-		delta = matrix.Multiply(hiddenError, dzDeactivate)
-
-		// Menghitung Gradient Descent untuk weight dan Bias
-		prevActivateT := matrix.Transpose(activations[i])
-		dWeight = matrix.Dot(delta, prevActivateT)
-		dBias = delta
-
-		params.Weight[i] = matrix.Subtract(params.Weight[i], matrix.Map(dWeight, func(x float64) float64 { return x * params.LearningRate }))
-		params.Bias[i] = matrix.Subtract(params.Bias[i], matrix.Map(dBias, func(x float64) float64 { return x * params.LearningRate }))
-
+func ArgMax(slice []float64) int {
+	maxIndex := -1
+	macVal := -1.0
+	for i, val := range slice {
+		if val > macVal {
+			macVal = val
+			maxIndex = i
+		}
 	}
+	return maxIndex
+}
 
+func (params *HyperParameters) Test(tesInputs, testTargets [][]float64) (accuracy float64, loss float64) {
+	if len(tesInputs) != len(testTargets) {
+		log.Fatalf("Jumlah input dan target tidak sesuai")
+		return -1, -1
+	}
+	var totalLoss float64
+	var correctPredictions int
+
+	for i := 0; i < len(tesInputs); i++ {
+		input := tesInputs[i]
+		target := testTargets[i]
+
+		prediction := params.Predict(input)
+
+		predictMatrix := matrix.FromSlice(prediction)
+		targetMatrix := matrix.FromSlice(target)
+		errorMatrix := matrix.Subtract(predictMatrix, targetMatrix)
+		totalLoss += CalculateMSE(errorMatrix)
+
+		predictLoss := ArgMax(prediction)
+		actualLoss := ArgMax(target)
+
+		if predictLoss == actualLoss {
+			correctPredictions++
+		}
+	}
+	numSamples := float64(len(tesInputs))
+	averangeLoss := totalLoss / numSamples
+	accuracy = (float64(correctPredictions) / numSamples) * 100.0
+	return accuracy, averangeLoss
 }
