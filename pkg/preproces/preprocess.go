@@ -30,29 +30,46 @@ Parameter:
 Return:
   - [][][]Pixel: slice tiga dimensi yang berisi pixel RGB dari gambar.
 */
-func ConvertToArray(img []image.Image) [][][]Pixel {
+func ConvertToArray(images []image.Image) [][][]uint8 {
+	// Slice untuk menampung semua data gambar yang sudah dikonversi
+	var dataset [][][]uint8
 
-	panjang := len(img)
-	var imagesRGB [][][]Pixel
+	// Looping untuk setiap gambar di dalam slice
+	for _, img := range images {
+		bounds := img.Bounds()
+		width, height := bounds.Dx(), bounds.Dy()
 
-	for i := 0; i < panjang; i++ {
-		width, height := img[i].Bounds().Dx(), img[i].Bounds().Dy()
-		pixels := make([][]Pixel, height)
+		// Slice untuk menampung data satu gambar ([baris][piksel])
+		var singleImage [][]uint8
 
+		// Iterasi per baris (koordinat y)
 		for y := 0; y < height; y++ {
-			pixels[y] = make([]Pixel, width)
+			// Slice untuk menampung semua piksel dalam satu baris
+			var rowPixels []uint8
+
+			// Iterasi per piksel dalam satu baris (koordinat x)
 			for x := 0; x < width; x++ {
-				r, g, b, _ := img[i].At(x, y).RGBA()
-				pixels[y][x] = Pixel{
-					R: uint8(r >> 8),
-					G: uint8(g >> 8),
-					B: uint8(b >> 8),
-				}
+				// Ambil warna pada piksel (x, y)
+				// Perhatikan: img.At() menggunakan koordinat absolut dari bounds
+				r, g, b, _ := img.At(x+bounds.Min.X, y+bounds.Min.Y).RGBA()
+
+				// Konversi channel warna dari format uint32 (0-65535) ke uint8 (0-255)
+				// Ini dilakukan dengan menggeser bit ke kanan sebanyak 8 (sama dengan dibagi 257)
+				pixelR := uint8(r >> 8)
+				pixelG := uint8(g >> 8)
+				pixelB := uint8(b >> 8)
+
+				// Tambahkan data R, G, B ke slice baris
+				rowPixels = append(rowPixels, pixelR, pixelG, pixelB)
 			}
+			// Tambahkan slice baris yang sudah terisi ke dalam slice gambar tunggal
+			singleImage = append(singleImage, rowPixels)
 		}
-		imagesRGB = append(imagesRGB, pixels)
+		// Tambahkan data gambar tunggal ke dalam dataset
+		dataset = append(dataset, singleImage)
 	}
-	return imagesRGB
+
+	return dataset
 }
 
 /*
@@ -65,26 +82,42 @@ Parameter:
 Return:
   - [][][]uint8: slice tiga dimensi yang berisi nilai skala abu-abu dari gambar.
 */
-func GrayScale(img [][][]Pixel) [][][]uint8 {
-	panjang := len(img)
-	var datagrayScale [][][]uint8
+func GrayScale(imagesRGB [][][]uint8) [][][]uint8 {
+	// Slice untuk menampung seluruh dataset yang sudah di-grayscale
+	var datasetGray [][][]uint8
 
-	for i := 0; i < panjang; i++ {
-		width, height := len(img[0]), len(img)
+	// Iterasi untuk setiap gambar dalam dataset
+	for _, singleImageRGB := range imagesRGB {
+		// Slice untuk menampung satu gambar yang sudah di-grayscale
+		var singleImageGray [][]uint8
 
-		grayPixels := make([][]uint8, height)
+		// Iterasi untuk setiap baris piksel dalam satu gambar
+		for _, rowRGB := range singleImageRGB {
+			// Slice untuk menampung satu baris yang sudah di-grayscale
+			// Panjangnya adalah 1/3 dari baris RGB karena setiap 3 byte (RGB) menjadi 1 byte (Gray)
+			newRowGray := make([]uint8, 0, len(rowRGB)/3)
 
-		for y := 0; y < height; y++ {
-			grayPixels[y] = make([]uint8, width)
-			for x := 0; x < width; x++ {
-				gray := (uint8(img[i][y][x].R) +
-					uint8(img[i][y][x].G) +
-					uint8(img[i][y][x].B)) / 3
+			// Iterasi pada baris RGB, melompat 3 byte setiap kali (untuk setiap piksel)
+			for i := 0; i < len(rowRGB); i += 3 {
+				// Ambil nilai R, G, B
+				r := rowRGB[i]
+				g := rowRGB[i+1]
+				b := rowRGB[i+2]
 
-				grayPixels[y][x] = gray
+				// Hitung nilai gray menggunakan metode rata-rata (Average Method)
+				// PENTING: Konversi ke uint16 dulu untuk mencegah overflow saat penjumlahan
+				// (contoh: 255 + 255 + 255 akan melebihi batas maks uint8 yaitu 255)
+				grayValue := (uint16(r) + uint16(g) + uint16(b)) / 3
+
+				// Tambahkan nilai gray yang sudah dihitung (kembalikan ke uint8) ke baris baru
+				newRowGray = append(newRowGray, uint8(grayValue))
 			}
+			// Tambahkan baris grayscale ke gambar grayscale
+			singleImageGray = append(singleImageGray, newRowGray)
 		}
-		datagrayScale = append(datagrayScale, grayPixels)
+		// Tambahkan gambar grayscale ke dataset grayscale
+		datasetGray = append(datasetGray, singleImageGray)
 	}
-	return datagrayScale
+
+	return datasetGray
 }

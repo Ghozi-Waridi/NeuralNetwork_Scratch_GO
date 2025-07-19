@@ -1,13 +1,11 @@
 /*
 ** Package loader
-Menyediakan fungsi untuk memuat gambat dari direktori, dan preproses gambar tersebut.
-func  Preprses di ambil dari package preproces
+Menyediakan fungsi untuk memuat gambar dari direktori dan melakukan pra-pemrosesan.
 
 Fitur Utama:
-	1. LoadImage: Memuat gambat dari path direktori.
-	2. DataLoader: Mengelola gambar dari func package preproces
+ 1. LoadImage: Memuat gambar dari path direktori.
+ 2. DataLoader: Mengelola pra-pemrosesan gambar (konversi ke array dan grayscale).
 */
-
 package loader
 
 import (
@@ -20,86 +18,116 @@ import (
 	"neuralnetworks/pkg/preproces"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 /*
 ** LoadImage
-Fungsi untuk meimuat gmabar dari path direktori parameter.
+Fungsi untuk memuat gambar dari path direktori yang diberikan.
+Fungsi ini akan secara otomatis melewati file yang bukan gambar atau file gambar yang rusak.
 
 Parameter:
-
-  - Path string: path direktori gambar.
+  - path string: Path ke direktori yang berisi gambar.
 
 Return:
-
-  - []image.Image: slice dari gambar yang dimuat.
-  - Error: error jika terjadi kesalahan saat membaca direktori atau membuka file gambar.
+  - []image.Image: Slice dari gambar yang berhasil dimuat.
+  - error: Error jika terjadi kesalahan fatal saat membaca direktori.
 */
-func LoadImage(path string) ([]image.Image, error) {
+func LoadImage(path string) ([]image.Image, error, []string) {
 	var images []image.Image
-	err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
+	var labels []string
+
+	// filepath.WalkDir lebih modern dan efisien daripada filepath.Walk
+	err := filepath.WalkDir(path, func(filePath string, d fs.DirEntry, err error) error {
+
 		if err != nil {
-			return fmt.Errorf("| ERROR | Gagal Membaca Direktori %s: %w", path, err)
+			return fmt.Errorf("| ERROR | Gagal mengakses path %s: %w", filePath, err)
 		}
 
-		if !d.IsDir() {
-			fileImage, errors := os.Open(path)
-
-			if errors != nil {
-				return fmt.Errorf("| ERROR | Gagak Membuka Gambar %s: %w", path, errors)
-			}
-
-			defer fileImage.Close()
-			img, _, err := image.Decode(fileImage)
-
-			if err != nil {
-				return fmt.Errorf("| ERROR | Gagal Mendekode File : %s: %w", path, err)
-			}
-			images = append(images, img)
+		if d.IsDir() {
+			return nil
 		}
+
+		// Ini untuk menghindari error pada file non-gambar lainnya.
+		fileName := strings.ToLower(d.Name())
+		if !strings.HasSuffix(fileName, ".jpg") && !strings.HasSuffix(fileName, ".jpeg") && !strings.HasSuffix(fileName, ".png") {
+			return nil
+		}
+
+		// Buka file gambar
+		fileImage, err := os.Open(filePath)
+		if err != nil {
+			// Log error saat membuka file tapi jangan hentikan seluruh proses
+			log.Printf("| WARNING | Gagal membuka file %s, file dilewati. Error: %v", filePath, err)
+			return nil
+		}
+		defer fileImage.Close()
+
+		// Dekode file menjadi data gambar
+		img, _, err := image.Decode(fileImage)
+		if err != nil {
+
+			// catat sebagai peringatan dan lanjutkan ke file berikutnya, jangan hentikan semua.
+			log.Printf("| WARNING | Gagal mendekode file %s, file dilewati. Error: %v", filePath, err)
+			return nil
+		}
+
+		images = append(images, img)
+		labels = append(labels, d.Name())
 		return nil
 	})
+
+	// Error ini hanya akan terpicu jika ada masalah fatal dengan WalkDir, bukan dengan file individual.
 	if err != nil {
-		return nil, fmt.Errorf("| ERROR | Gagal Membaca File Gambar: %w", err)
+		return nil, fmt.Errorf("| ERROR | Gagal memproses direktori secara keseluruhan: %w", err), nil
 	}
-	return images, nil
+
+	// Memberi tahu jika tidak ada gambar yang berhasil dimuat
+	if len(images) == 0 {
+		log.Println("| INFO | Tidak ada gambar valid yang ditemukan di path yang diberikan.")
+	}
+
+	return images, nil, labels
 }
 
 /*
 ** DataLoader
-fungsi untuk mengolah gambar.
+Fungsi untuk memuat dan mengolah data gambar.
 
 Parameter:
-
-  - Path string: path direktori gambar dan diteruskan ke fungsi LoadImage.
-  - grayScale bool: jika true, gambar akan diubah menjadi skala abu-abu.
+  - path string: Path direktori gambar yang akan diteruskan ke LoadImage.
+  - grayScale bool: Jika true, gambar akan diubah menjadi skala abu-abu.
 
 Return:
-
-  - [][][]uint8: slice tiga dimensi yang berisi data gambar dalam format uint8.
+  - [][][]uint8: Slice tiga dimensi yang berisi data gambar dalam format uint8.
+    Mengembalikan nil jika terjadi kesalahan fatal atau path kosong.
 */
-func DataLoader(path string, grayScale bool) [][][]uint8 {
-
-	var images [][][]uint8
-
+func DataLoader(path string, grayScale bool) ([][][]uint8, []string) {
 	if path == "" {
-		log.Println("Path Tidak Boleh Kosong")
-		return nil
+		log.Println("| ERROR | Path tidak boleh kosong.")
+		return nil, nil
 	}
 
-	img, err := LoadImage(path)
-
+	img, err, labels := LoadImage(path)
 	if err != nil {
-		log.Printf("Gagal Memuat Gambar: %v\n", err)
-		return nil
+		// LoadImage sudah mencatat detail error, di sini cukup log pesan umum.
+		log.Printf("| FATAL | Gagal memuat dataset gambar: %v", err)
+		return nil, nil
+	}
+
+	// Jika tidak ada gambar yang dimuat, tidak ada yang perlu diproses.
+	if len(img) == 0 {
+		return nil, nil
 	}
 
 	imagesRGB := preproces.ConvertToArray(img)
 
 	if grayScale {
-		images = preproces.GrayScale(imagesRGB)
-		return images
+		imagesGrayscale := preproces.GrayScale(imagesRGB)
+		return imagesGrayscale, labels
 	}
 
-	return images
+	// Versi sebelumnya mengembalikan slice 'images' yang kosong.
+	return imagesRGB, labels
 }
+

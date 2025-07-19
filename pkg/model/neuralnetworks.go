@@ -5,7 +5,7 @@ import (
 	"log"
 	"math"
 	"math/rand"
-	"neuralnetworks/pkg/activation"
+	"neuralnetworks/pkg/Activation"
 	"neuralnetworks/pkg/deactivate"
 	"neuralnetworks/pkg/matrix"
 	"time"
@@ -20,6 +20,7 @@ type HyperParameters struct {
 }
 
 func InitHyperParameters(learningrate float64, architecture ...int) *HyperParameters {
+	fmt.Print(len(architecture))
 
 	if len(architecture) < 2 {
 		log.Fatalf("Architecture harus memiliki minimal 2 layer (input, output)")
@@ -103,10 +104,12 @@ func (params *HyperParameters) Train(inputs, targets []float64, epochs int) []fl
 		input := matrix.FromSlice(inputs)
 		target := matrix.FromSlice(targets)
 		// Membuat slice untuk menyimpan hasil activation tetapi ini tidak berisi
+		// dengan panjang sesuai dengan jumlah layer (architecture)
 		activations := make([][][]float64, len(params.Architecture))
 		// Inisialisasi layer pertama dengan input
 		activations[0] = input
 		// Membuat slice untuk menyimpan hasil z (hasil Dari linear Regersi (dot product))
+		// ini menyimpan hasil dari setiap lapisan atau layer.
 		zs := make([][][]float64, len(params.Weight))
 
 		// ======= FORWARD PROPAGATION =======

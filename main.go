@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"neuralnetworks/pkg/dataset"
-	"neuralnetworks/pkg/model"
 )
 
 func main() {
@@ -14,10 +13,9 @@ func main() {
 	train_loader, labels_train := loader.DataLoader(PATH_TRAIN, true)
 	test_loader, labels_test := loader.DataLoader(PATH_TEST, true)
 
-	fmt.Println("Train Dataset: ", len(train_loader))
+	fmt.Println("Train Dataset: ", train_loader)
 	fmt.Println("Labels: ", labels_train)
-	fmt.Println("Test Dataset: ", len(test_loader))
+	fmt.Println("Test Dataset: ", test_loader)
 	fmt.Println("Labels: ", labels_test)
 
 }
-
