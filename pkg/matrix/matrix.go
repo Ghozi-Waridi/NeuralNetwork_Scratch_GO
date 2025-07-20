@@ -1,74 +1,68 @@
+
 package matrix
 
 import (
 	"log"
 )
 
+// Dot melakukan perkalian matriks (dot product).
 func Dot(a, b [][]float64) [][]float64 {
-	rowsA := len(a)
-
-	if rowsA == 0 {
-		log.Println("Matrix A tidak boleh kosong")
-		return nil
+	if len(a) == 0 || len(a[0]) == 0 {
+		log.Fatal("Matriks A tidak boleh kosong untuk operasi Dot.")
 	}
+	if len(b) == 0 || len(b[0]) == 0 {
+		log.Fatal("Matriks B tidak boleh kosong untuk operasi Dot.")
+	}
+
+	rowsA := len(a)
 	colsA := len(a[0])
 	rowsB := len(b)
-
-	if rowsB == 0 {
-		log.Println("Matrix B tidak boleh kosong")
-	}
 	colsB := len(b[0])
 
 	if colsA != rowsB {
-		log.Fatalf("Dimensi Matriks tidak valid: Ukuran antara kolom A dan baris B tidak cocok")
+		log.Fatalf("Dimensi Matriks tidak valid: Ukuran kolom A (%d) dan baris B (%d) tidak cocok.", colsA, rowsB)
 	}
 
-	result := make([][]float64, rowsA)
-	for i := range result {
-		result[i] = make([]float64, colsB)
-	}
+	result := CreateMatrix(rowsA, colsB)
 
+
+	// Rumus untuk result[i][j] adalah jumlah dari a[i][k] * b[k][j]
 	for i := 0; i < rowsA; i++ {
-		for k := 0; k < colsB; k++ {
+		for j := 0; j < colsB; j++ {
 			sum := 0.0
-			for j := 0; j < colsA; j++ {
-				sum += a[i][j] * b[k][j]
+			for k := 0; k < colsA; k++ { // k berjalan sepanjang kolom A / baris B
+				sum += a[i][k] * b[k][j]
 			}
-			result[i][k] = sum
+			result[i][j] = sum
 		}
 	}
 	return result
 }
 
+// Flate mengubah matriks 2D menjadi slice 1D (vektor).
 func Flate(a [][]float64) []float64 {
 	if len(a) == 0 {
-		log.Println("Matrix tidak boleh kosong")
-		return nil
+		return []float64{}
 	}
-	result := make([]float64, 0)
-	cols := len(a[0])
 	rowsA := len(a)
+	colsA := len(a[0])
+	result := make([]float64, 0, rowsA*colsA)
 
 	for i := 0; i < rowsA; i++ {
-		for k := 0; k < cols; k++ {
-			result = append(result, a[i][k])
-		}
+		result = append(result, a[i]...)
 	}
 	return result
 }
 
+// Transpose mengubah baris menjadi kolom dan sebaliknya.
 func Transpose(a [][]float64) [][]float64 {
-	if len(a) == 0 {
-		log.Println("Matrix tidak boleh kosong")
-		return nil
+	if len(a) == 0 || len(a[0]) == 0 {
+		return [][]float64{}
 	}
 	rowsA := len(a)
 	colsA := len(a[0])
 
-	result := make([][]float64, colsA)
-	for a := range result {
-		result[a] = make([]float64, rowsA)
-	}
+	result := CreateMatrix(colsA, rowsA)
 
 	for i := 0; i < rowsA; i++ {
 		for j := 0; j < colsA; j++ {
@@ -78,6 +72,7 @@ func Transpose(a [][]float64) [][]float64 {
 	return result
 }
 
+// CreateMatrix membuat matriks baru dengan ukuran yang ditentukan, diinisialisasi dengan nol.
 func CreateMatrix(rows, cols int) [][]float64 {
 	matrix := make([][]float64, rows)
 	for i := range matrix {
@@ -86,7 +81,12 @@ func CreateMatrix(rows, cols int) [][]float64 {
 	return matrix
 }
 
+// Add menjumlahkan dua matriks secara element-wise.
 func Add(a, b [][]float64) [][]float64 {
+
+	if len(a) != len(b) || len(a[0]) != len(b[0]) {
+		log.Fatalf("Dimensi matriks untuk operasi Add tidak cocok: (%d x %d) vs (%d x %d)", len(a), len(a[0]), len(b), len(b[0]))
+	}
 	rows := len(a)
 	cols := len(a[0])
 
@@ -99,7 +99,12 @@ func Add(a, b [][]float64) [][]float64 {
 	return result
 }
 
+// Multiply mengalikan dua matriks secara element-wise (Hadamard product).
 func Multiply(a, b [][]float64) [][]float64 {
+
+	if len(a) != len(b) || len(a[0]) != len(b[0]) {
+		log.Fatalf("Dimensi matriks untuk operasi Multiply tidak cocok: (%d x %d) vs (%d x %d)", len(a), len(a[0]), len(b), len(b[0]))
+	}
 	rows := len(a)
 	cols := len(a[0])
 
@@ -109,11 +114,14 @@ func Multiply(a, b [][]float64) [][]float64 {
 			result[i][j] = a[i][j] * b[i][j]
 		}
 	}
-
 	return result
 }
 
+// Map menerapkan sebuah fungsi ke setiap elemen matriks.
 func Map(m [][]float64, fn func(float64) float64) [][]float64 {
+	if len(m) == 0 || len(m[0]) == 0 {
+		return [][]float64{}
+	}
 	rows := len(m)
 	cols := len(m[0])
 	result := CreateMatrix(rows, cols)
@@ -125,6 +133,7 @@ func Map(m [][]float64, fn func(float64) float64) [][]float64 {
 	return result
 }
 
+// FromSlice mengubah slice 1D menjadi matriks kolom (Nx1).
 func FromSlice(slice []float64) [][]float64 {
 	rows := len(slice)
 	m := CreateMatrix(rows, 1)
@@ -134,7 +143,12 @@ func FromSlice(slice []float64) [][]float64 {
 	return m
 }
 
+// Subtract mengurangkan dua matriks secara element-wise.
 func Subtract(a, b [][]float64) [][]float64 {
+
+	if len(a) != len(b) || len(a[0]) != len(b[0]) {
+		log.Fatalf("Dimensi matriks untuk operasi Subtract tidak cocok: (%d x %d) vs (%d x %d)", len(a), len(a[0]), len(b), len(b[0]))
+	}
 	rows := len(a)
 	cols := len(a[0])
 	result := CreateMatrix(rows, cols)
@@ -145,3 +159,4 @@ func Subtract(a, b [][]float64) [][]float64 {
 	}
 	return result
 }
+

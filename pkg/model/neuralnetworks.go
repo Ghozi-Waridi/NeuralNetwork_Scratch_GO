@@ -100,6 +100,7 @@ func (params *HyperParameters) Train(inputs [][]float64, targets [][]float64, ep
 			zs := make([][][]float64, len(params.Weight))
 
 			for layer := 0; layer < len(params.Weight); layer++ {
+				fmt.Println(len(params.Weight[layer]), len(activations[layer]))
 				z := matrix.Dot(params.Weight[layer], activations[layer])
 				z = matrix.Add(z, params.Bias[layer])
 				zs[layer] = z
@@ -115,7 +116,9 @@ func (params *HyperParameters) Train(inputs [][]float64, targets [][]float64, ep
 
 			// ======= BACKWARD PROPAGATION =======
 			outputError := matrix.Subtract(target, activations[len(activations)-1])
+			fmt.Println("Hasil Sebelum CalculateMSE : ", 0.0)
 			totalEpochLoss += CalculateMSE(outputError)
+			fmt.Println("Hasil Setelah CalculateMSE : ", totalEpochLoss)
 
 			dzError := matrix.Map(zs[len(zs)-1], deactivate.Sigmoid)
 			delta := matrix.Multiply(outputError, dzError)
@@ -139,10 +142,10 @@ func (params *HyperParameters) Train(inputs [][]float64, targets [][]float64, ep
 				params.Bias[layer] = matrix.Add(params.Bias[layer], matrix.Map(dBias, func(x float64) float64 { return x * params.LearningRate }))
 			}
 		}
-
+		fmt.Println(totalEpochLoss)
 		averageLoss := totalEpochLoss / float64(len(inputs))
 		lossHistory[epoch] = averageLoss
-		if (epoch+1)%100 == 0 || epoch == 0 {
+		if (epoch+1)%10 == 0 || epoch == 0 {
 			fmt.Printf("Epoch %d/%d, Loss: %f\n", epoch+1, epochs, averageLoss)
 		}
 	}
