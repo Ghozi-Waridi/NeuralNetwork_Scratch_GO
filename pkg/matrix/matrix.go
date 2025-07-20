@@ -1,7 +1,7 @@
-
 package matrix
 
 import (
+	"fmt"
 	"log"
 )
 
@@ -145,15 +145,16 @@ func FromSlice(slice []float64) [][]float64 {
 
 // Subtract mengurangkan dua matriks secara element-wise.
 func Subtract(a, b [][]float64) [][]float64 {
-
 	if len(a) != len(b) || len(a[0]) != len(b[0]) {
 		log.Fatalf("Dimensi matriks untuk operasi Subtract tidak cocok: (%d x %d) vs (%d x %d)", len(a), len(a[0]), len(b), len(b[0]))
 	}
 	rows := len(a)
 	cols := len(a[0])
+	fmt.Printf("Mengurangkan matriks A (%d x %d) dengan matriks B (%d x %d)\n", rows, cols, len(b), len(b[0]))
 	result := CreateMatrix(rows, cols)
 	for i := 0; i < rows; i++ {
 		for j := 0; j < cols; j++ {
+			fmt.Printf("Mengurangkan a[%d][%d] = %f dengan b[%d][%d] = %f\n", i, j, a[i][j], i, j, b[i][j])
 			result[i][j] = a[i][j] - b[i][j]
 		}
 	}

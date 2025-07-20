@@ -116,7 +116,8 @@ func (params *HyperParameters) Train(inputs [][]float64, targets [][]float64, ep
 
 			// ======= BACKWARD PROPAGATION =======
 			outputError := matrix.Subtract(target, activations[len(activations)-1])
-			fmt.Println("Hasil Sebelum CalculateMSE : ", 0.0)
+			fmt.Println("Output Error: ", outputError[0][0])
+			fmt.Println("Hasil Sebelum CalculateMSE : ", totalEpochLoss)
 			totalEpochLoss += CalculateMSE(outputError)
 			fmt.Println("Hasil Setelah CalculateMSE : ", totalEpochLoss)
 

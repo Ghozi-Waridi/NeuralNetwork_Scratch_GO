@@ -24,7 +24,7 @@ func main() {
 
 	fmt.Println(len(train_loader), len(labels_train[0]))
 
-	model := model.InitHyperParameters(0.01, 14400, 128, 64, 609)
+	model := model.InitHyperParameters(0.000001, 14400, 128, 64, 609)
 	// fmt.Println("Model Hyperparameters: ", model)
 
 	encoder := encoder.NewEncoder(labels_train)
@@ -32,6 +32,6 @@ func main() {
 	oneHotTargets := encoder.Transform(labels_train)
 	
 	fmt.Println("Masuk Bagian Training")
-	hasil := model.Train(train_loader, oneHotTargets, 5)
+	hasil := model.Train(train_loader, oneHotTargets, 2)
 	fmt.Println("Hasil LOSS Training: ", hasil)
 }

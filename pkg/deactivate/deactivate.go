@@ -1,7 +1,14 @@
 package deactivate
 
+import (
+	"math"
+)
+// pkg/deactivate/deactivate.go
 func Sigmoid(x float64) float64 {
-	return x * (1 - x)
+    // Hitung dulu sigmoid dari x
+    s := 1 / (1 + math.Exp(-x))
+    // Baru hitung turunannya
+    return s * (1 - s)
 }
 
 func Relu(x float64) float64 {
