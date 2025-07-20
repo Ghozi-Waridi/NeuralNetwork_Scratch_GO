@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"neuralnetworks/pkg/dataset"
 	"neuralnetworks/pkg/model"
+	"neuralnetworks/pkg/encoder"
 )
 
 func main() {
@@ -19,5 +20,13 @@ func main() {
 	fmt.Println("Test Dataset: ", len(test_loader))
 	fmt.Println("Labels: ", labels_test)
 
-}
+	model := model.InitHyperParameters(0.01, 764, 128, 64, 2)
+	fmt.Println("Model Hyperparameters: ", model)
 
+	encoder := encoder.NewEncoder(labels_train)
+	encoder.Fit(labels_train)
+	oneHotTargets := encoder.Transform(labels_train)
+
+	hasil := model.Train(train_loader, oneHotTargets, 10)
+	fmt.Println("Hasil LOSS Training: ", hasil)
+}

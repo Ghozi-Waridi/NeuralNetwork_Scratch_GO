@@ -30,9 +30,9 @@ Parameter:
 Return:
   - [][][]Pixel: slice tiga dimensi yang berisi pixel RGB dari gambar.
 */
-func ConvertToArray(images []image.Image) [][][]uint8 {
+func ConvertToArray(images []image.Image) [][][]float64 {
 	// Slice untuk menampung semua data gambar yang sudah dikonversi
-	var dataset [][][]uint8
+	var dataset [][][]float64
 
 	// Looping untuk setiap gambar di dalam slice
 	for _, img := range images {
@@ -40,12 +40,12 @@ func ConvertToArray(images []image.Image) [][][]uint8 {
 		width, height := bounds.Dx(), bounds.Dy()
 
 		// Slice untuk menampung data satu gambar ([baris][piksel])
-		var singleImage [][]uint8
+		var singleImage [][]float64
 
 		// Iterasi per baris (koordinat y)
 		for y := 0; y < height; y++ {
 			// Slice untuk menampung semua piksel dalam satu baris
-			var rowPixels []uint8
+			var rowPixels []float64
 
 			// Iterasi per piksel dalam satu baris (koordinat x)
 			for x := 0; x < width; x++ {
@@ -55,9 +55,9 @@ func ConvertToArray(images []image.Image) [][][]uint8 {
 
 				// Konversi channel warna dari format uint32 (0-65535) ke uint8 (0-255)
 				// Ini dilakukan dengan menggeser bit ke kanan sebanyak 8 (sama dengan dibagi 257)
-				pixelR := uint8(r >> 8)
-				pixelG := uint8(g >> 8)
-				pixelB := uint8(b >> 8)
+				pixelR := float64(r >> 8)
+				pixelG := float64(g >> 8)
+				pixelB := float64(b >> 8)
 
 				// Tambahkan data R, G, B ke slice baris
 				rowPixels = append(rowPixels, pixelR, pixelG, pixelB)
@@ -82,20 +82,20 @@ Parameter:
 Return:
   - [][][]uint8: slice tiga dimensi yang berisi nilai skala abu-abu dari gambar.
 */
-func GrayScale(imagesRGB [][][]uint8) [][][]uint8 {
+func GrayScale(imagesRGB [][][]float64) [][][]float64 {
 	// Slice untuk menampung seluruh dataset yang sudah di-grayscale
-	var datasetGray [][][]uint8
+	var datasetGray [][][]float64
 
 	// Iterasi untuk setiap gambar dalam dataset
 	for _, singleImageRGB := range imagesRGB {
 		// Slice untuk menampung satu gambar yang sudah di-grayscale
-		var singleImageGray [][]uint8
+		var singleImageGray [][]float64	
 
 		// Iterasi untuk setiap baris piksel dalam satu gambar
 		for _, rowRGB := range singleImageRGB {
 			// Slice untuk menampung satu baris yang sudah di-grayscale
 			// Panjangnya adalah 1/3 dari baris RGB karena setiap 3 byte (RGB) menjadi 1 byte (Gray)
-			newRowGray := make([]uint8, 0, len(rowRGB)/3)
+			newRowGray := make([]float64, 0, len(rowRGB)/3)
 
 			// Iterasi pada baris RGB, melompat 3 byte setiap kali (untuk setiap piksel)
 			for i := 0; i < len(rowRGB); i += 3 {
@@ -110,7 +110,7 @@ func GrayScale(imagesRGB [][][]uint8) [][][]uint8 {
 				grayValue := (uint16(r) + uint16(g) + uint16(b)) / 3
 
 				// Tambahkan nilai gray yang sudah dihitung (kembalikan ke uint8) ke baris baru
-				newRowGray = append(newRowGray, uint8(grayValue))
+				newRowGray = append(newRowGray, float64(grayValue))
 			}
 			// Tambahkan baris grayscale ke gambar grayscale
 			singleImageGray = append(singleImageGray, newRowGray)
