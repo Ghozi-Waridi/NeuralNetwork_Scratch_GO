@@ -165,30 +165,50 @@ func ArgMax(slice []float64) int {
 	return maxIndex
 }
 
-func (params *HyperParameters) Test(tesInputs, testTargets [][]float64) (accuracy float64, loss float64) {
-	if len(tesInputs) != len(testTargets) {
-		log.Fatalf("Jumlah input dan target tidak sesuai")
-		return -1, -1
-	}
+// func (params *HyperParameters) Test(tesInputs, testTargets [][]float64) (accuracy float64, loss float64) {
+// 	if len(tesInputs) != len(testTargets) {
+// 		log.Fatalf("Jumlah input dan target tidak sesuai")
+// 		return -1, -1
+// 	}
+// 	var totalLoss float64
+// 	var correctPredictions int
+
+func (params *HyperParameters) Test(testInputs, testTargets [][]float64) (accuracy float64, loss float64, err error) {
+	// if len(testInputs) != len(testTargets) {
+	// 	return 0, 0, fmt.Errorf("jumlah input (%d) dan target (%d) tidak sesuai", len(testInputs), len(testTargets))
+	// }
+
 	var totalLoss float64
 	var correctPredictions int
 
-	for i := 0; i < len(tesInputs); i++ {
-		input := tesInputs[i]
+	for i := 0; i < len(testInputs); i++ {
+		input := testInputs[i]
 		target := testTargets[i]
+
+		// Dapatkan prediksi dari model
 		prediction := params.Predict(input)
+
+		// --- Kalkulasi Loss (MSE) ---
 		predictMatrix := matrix.FromSlice(prediction)
 		targetMatrix := matrix.FromSlice(target)
 		errorMatrix := matrix.Subtract(predictMatrix, targetMatrix)
-		totalLoss += CalculateMSE(errorMatrix)
-		predictLoss := ArgMax(prediction)
-		actualLoss := ArgMax(target)
-		if predictLoss == actualLoss {
+		totalLoss += CalculateMSE(errorMatrix) // Asumsi CalculateMSE menghitung loss untuk satu sampel
+
+		// --- Kalkulasi Akurasi ---
+		// ArgMax menemukan indeks dengan nilai tertinggi, yang merepresentasikan kelas prediksi/aktual.
+		// Asumsi: 'target' adalah vektor one-hot (contoh: [0, 0, 1, 0])
+		predictedLabel := ArgMax(prediction)
+		actualLabel := ArgMax(target)
+
+		if predictedLabel == actualLabel {
 			correctPredictions++
 		}
 	}
-	numSamples := float64(len(tesInputs))
-	averangeLoss := totalLoss / numSamples
+
+	numSamples := float64(len(testInputs))
+	// [PERBAIKAN] Typo 'averangeLoss' menjadi 'averageLoss'.
+	averageLoss := totalLoss / numSamples
 	accuracy = (float64(correctPredictions) / numSamples) * 100.0
-	return accuracy, averangeLoss
+
+	return accuracy, averageLoss, nil
 }

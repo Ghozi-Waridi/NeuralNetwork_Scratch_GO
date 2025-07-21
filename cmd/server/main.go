@@ -24,14 +24,24 @@ func main() {
 
 	fmt.Println(len(train_loader), len(labels_train[0]))
 
-	model := model.InitHyperParameters(0.000001, 14400, 128, 64, 609)
+	model := model.InitHyperParameters(0.001, 14400, 128, 64, 609)
 	// fmt.Println("Model Hyperparameters: ", model)
 
-	encoder := encoder.NewEncoder(labels_train)
-	encoder.Fit(labels_train)
-	oneHotTargets := encoder.Transform(labels_train)
+	encoder_train := encoder.NewEncoder(labels_train)
+	encoder_train.Fit(labels_train)
+	oneHotTargets := encoder_train.Transform(labels_train)
 	
 	fmt.Println("Masuk Bagian Training")
 	hasil := model.Train(train_loader, oneHotTargets, 2)
 	fmt.Println("Hasil LOSS Training: ", hasil)
+
+	// encoder_test := encoder.NewEncoder(labels_test)
+	// encoder_test.Fit(labels_test)
+	// labels_test_one_hot := encoder_test.Transform(labels_test)
+
+	accuracy, loss, err := model.Test(test_loader, oneHotTargets)
+	if err != nil {
+		fmt.Println("Error during testing:", err)
+	}
+	fmt.Printf("Akurasi: %.2f%%, Loss: %.4f\n", accuracy*100, loss)
 }
